@@ -6,8 +6,8 @@ const app = require('../server');
 const connectDB = require('../config/db');
 const mongoose = require('mongoose');
 const sinon = require('sinon');
-const Member = require('../models/Member');
-const { updateMember,getMembers,addMember,deleteMember } = require('../controllers/memberController');
+const Loan = require('../models/Loan');
+const { updateLoan,getLoans,addLoan,deleteLoan } = require('../controllers/loanController');
 const { expect } = chai;
 
 chai.use(chaiHttp);
@@ -15,20 +15,20 @@ let server;
 let port;
 
 
-describe('AddMember Function Test', () => {
+describe('AddLoan Function Test', () => {
 
-  it('should create a new member successfully', async () => {
+  it('should create a new loan successfully', async () => {
     // Mock request data
     const req = {
       user: { id: new mongoose.Types.ObjectId() },
-      body: { name: "New Member", gender: "Gender", dateOfBirth: "2001-11-01" }
+      body: { book: "New Book", loanee: "New Loanee", dueDate: "2025-05-01" }
     };
 
-    // Mock task that would be created
-    const createdMember = { _id: new mongoose.Types.ObjectId(), ...req.body, userId: req.user.id };
+    // Mock loan that would be created
+    const createdLoan = { _id: new mongoose.Types.ObjectId(), ...req.body, userId: req.user.id };
 
-    // Stub Task.create to return the createdTask
-    const createStub = sinon.stub(Member, 'create').resolves(createdMember);
+    // Stub Loan.create to return the createdTask
+    const createStub = sinon.stub(Loan, 'create').resolves(createdLoan);
 
     // Mock response object
     const res = {
@@ -37,25 +37,25 @@ describe('AddMember Function Test', () => {
     };
 
     // Call function
-    await addMember(req, res);
+    await addLoan(req, res);
 
     // Assertions
     expect(createStub.calledOnceWith({ userId: req.user.id, ...req.body })).to.be.true;
     expect(res.status.calledWith(201)).to.be.true;
-    expect(res.json.calledWith(createdMember)).to.be.true;
+    expect(res.json.calledWith(createdLoan)).to.be.true;
 
     // Restore stubbed methods
     createStub.restore();
   });
 
   it('should return 500 if an error occurs', async () => {
-    // Stub Task.create to throw an error
-    const createStub = sinon.stub(Member, 'create').throws(new Error('DB Error'));
+    // Stub Loan.create to throw an error
+    const createStub = sinon.stub(Loan, 'create').throws(new Error('DB Error'));
 
     // Mock request data
     const req = {
       user: { id: new mongoose.Types.ObjectId() },
-      body: { name: "New Member", gender: "Gender", dateOfBirth: "2001-11-01" }
+      body: { book: "New Book", loanee: "New Loanee", dueDate: "2025-09-10" }
     };
 
     // Mock response object
@@ -65,7 +65,7 @@ describe('AddMember Function Test', () => {
     };
 
     // Call function
-    await addMember(req, res);
+    await addLoan(req, res);
 
     // Assertions
     expect(res.status.calledWith(500)).to.be.true;
@@ -80,23 +80,23 @@ describe('AddMember Function Test', () => {
 
 describe('Update Function Test', () => {
 
-  it('should update member successfully', async () => {
-    // Mock task data
-    const memberId = new mongoose.Types.ObjectId();
-    const existingMember = {
-      _id: memberId,
-      name: "Old Member",
-      gender: "Old Gender",
-      deadline: new Date(),
+  it('should update loan successfully', async () => {
+    // Mock loan data
+    const loanId = new mongoose.Types.ObjectId();
+    const existingLoan = {
+      _id: loanId,
+      book: "Old Book",
+      loanee: "Old Loanee",
+      dueDate: new Date(),
       save: sinon.stub().resolvesThis(), // Mock save method
     };
-    // Stub Task.findById to return mock task
-    const findByIdStub = sinon.stub(Member, 'findById').resolves(existingMember);
+    // Stub Loan.findById to return mock task
+    const findByIdStub = sinon.stub(Loan, 'findById').resolves(existingLoan);
 
     // Mock request & response
     const req = {
-      params: { id: memberId },
-      body: { name: "New Member", gender: "New Gender" }
+      params: { id: loanId },
+      body: { book: "New Book", loanee: "New Loanee", dueDate: "2025-09-21" }
     };
     const res = {
       json: sinon.spy(), 
@@ -104,11 +104,12 @@ describe('Update Function Test', () => {
     };
 
     // Call function
-    await updateMember(req, res);
+    await updateLoan(req, res);
 
     // Assertions
-    expect(existingMember.name).to.equal("New Member");
-    expect(existingMember.gender).to.equal("New Gender");
+    expect(existingLoan.book).to.equal("New Book");
+    expect(existingLoan.loanee).to.equal("New Loanee");
+    expect(existingLoan.dueDate).to.equal("2025-09-21");
     expect(res.status.called).to.be.false; // No error status should be set
     expect(res.json.calledOnce).to.be.true;
 
@@ -118,8 +119,8 @@ describe('Update Function Test', () => {
 
 
 
-  it('should return 404 if member is not found', async () => {
-    const findByIdStub = sinon.stub(Member, 'findById').resolves(null);
+  it('should return 404 if loan is not found', async () => {
+    const findByIdStub = sinon.stub(Loan, 'findById').resolves(null);
 
     const req = { params: { id: new mongoose.Types.ObjectId() }, body: {} };
     const res = {
@@ -127,16 +128,16 @@ describe('Update Function Test', () => {
       json: sinon.spy()
     };
 
-    await updateMember(req, res);
+    await updateLoan(req, res);
 
     expect(res.status.calledWith(404)).to.be.true;
-    expect(res.json.calledWith({ message: 'Member not found' })).to.be.true;
+    expect(res.json.calledWith({ message: 'Loan not found' })).to.be.true;
 
     findByIdStub.restore();
   });
 
   it('should return 500 on error', async () => {
-    const findByIdStub = sinon.stub(Member, 'findById').throws(new Error('DB Error'));
+    const findByIdStub = sinon.stub(Loan, 'findById').throws(new Error('DB Error'));
 
     const req = { params: { id: new mongoose.Types.ObjectId() }, body: {} };
     const res = {
@@ -144,7 +145,7 @@ describe('Update Function Test', () => {
       json: sinon.spy()
     };
 
-    await updateMember(req, res);
+    await updateLoan(req, res);
 
     expect(res.status.calledWith(500)).to.be.true;
     expect(res.json.called).to.be.true;
@@ -158,20 +159,20 @@ describe('Update Function Test', () => {
 
 
 
-describe('GetMember Function Test', () => {
+describe('GetLoan Function Test', () => {
 
-  it('should return members for the given user', async () => {
+  it('should return loans for the given user', async () => {
     // Mock user ID
     const userId = new mongoose.Types.ObjectId();
 
-    // Mock member data
-    const members = [
-      { _id: new mongoose.Types.ObjectId(), name: "Member 1", userId },
-      { _id: new mongoose.Types.ObjectId(), name: "Member 2", userId }
+    // Mock loan data
+    const loans = [
+      { _id: new mongoose.Types.ObjectId(), book: "Book 1", loanee: "Loanee 1", dueDate: "2025-10-31", userId },
+      { _id: new mongoose.Types.ObjectId(), book: "Book 2", loanee: "Loanee 2", dueDate: "2025-11-01", userId }
     ];
 
-    // Stub Member.find to return mock members
-    const findStub = sinon.stub(Member, 'find').resolves(members);
+    // Stub Loan.find to return mock loans
+    const findStub = sinon.stub(Loan, 'find').resolves(loans);
 
     // Mock request & response
     const req = { user: { id: userId } };
@@ -181,11 +182,11 @@ describe('GetMember Function Test', () => {
     };
 
     // Call function
-    await getMembers(req, res);
+    await getLoans(req, res);
 
     // Assertions
     expect(findStub.calledOnceWith({ userId })).to.be.true;
-    expect(res.json.calledWith(members)).to.be.true;
+    expect(res.json.calledWith(loans)).to.be.true;
     expect(res.status.called).to.be.false; // No error status should be set
 
     // Restore stubbed methods
@@ -193,8 +194,8 @@ describe('GetMember Function Test', () => {
   });
 
   it('should return 500 on error', async () => {
-    // Stub Member.find to throw an error
-    const findStub = sinon.stub(Member, 'find').throws(new Error('DB Error'));
+    // Stub Loan.find to throw an error
+    const findStub = sinon.stub(Loan, 'find').throws(new Error('DB Error'));
 
     // Mock request & response
     const req = { user: { id: new mongoose.Types.ObjectId() } };
@@ -204,7 +205,7 @@ describe('GetMember Function Test', () => {
     };
 
     // Call function
-    await getMembers(req, res);
+    await getLoans(req, res);
 
     // Assertions
     expect(res.status.calledWith(500)).to.be.true;
@@ -218,17 +219,17 @@ describe('GetMember Function Test', () => {
 
 
 
-describe('DeleteMember Function Test', () => {
+describe('DeleteLoan Function Test', () => {
 
-  it('should delete a member successfully', async () => {
+  it('should delete a loan successfully', async () => {
     // Mock request data
     const req = { params: { id: new mongoose.Types.ObjectId().toString() } };
 
-    // Mock member found in the database
-    const member = { remove: sinon.stub().resolves() };
+    // Mock loan found in the database
+    const loan = { remove: sinon.stub().resolves() };
 
-    // Stub Member.findById to return the mock member
-    const findByIdStub = sinon.stub(Member, 'findById').resolves(member);
+    // Stub Loan.findById to return the mock loan
+    const findByIdStub = sinon.stub(Loan, 'findById').resolves(loan);
 
     // Mock response object
     const res = {
@@ -237,20 +238,20 @@ describe('DeleteMember Function Test', () => {
     };
 
     // Call function
-    await deleteMember(req, res);
+    await deleteLoan(req, res);
 
     // Assertions
     expect(findByIdStub.calledOnceWith(req.params.id)).to.be.true;
-    expect(member.remove.calledOnce).to.be.true;
-    expect(res.json.calledWith({ message: 'Member deleted' })).to.be.true;
+    expect(loan.remove.calledOnce).to.be.true;
+    expect(res.json.calledWith({ message: 'Loan deleted' })).to.be.true;
 
     // Restore stubbed methods
     findByIdStub.restore();
   });
 
-  it('should return 404 if member is not found', async () => {
-    // Stub Member.findById to return null
-    const findByIdStub = sinon.stub(Member, 'findById').resolves(null);
+  it('should return 404 if loan is not found', async () => {
+    // Stub Loan.findById to return null
+    const findByIdStub = sinon.stub(Loan, 'findById').resolves(null);
 
     // Mock request data
     const req = { params: { id: new mongoose.Types.ObjectId().toString() } };
@@ -262,20 +263,20 @@ describe('DeleteMember Function Test', () => {
     };
 
     // Call function
-    await deleteMember(req, res);
+    await deleteLoan(req, res);
 
     // Assertions
     expect(findByIdStub.calledOnceWith(req.params.id)).to.be.true;
     expect(res.status.calledWith(404)).to.be.true;
-    expect(res.json.calledWith({ message: 'Member not found' })).to.be.true;
+    expect(res.json.calledWith({ message: 'Loan not found' })).to.be.true;
 
     // Restore stubbed methods
     findByIdStub.restore();
   });
 
   it('should return 500 if an error occurs', async () => {
-    // Stub Member.findById to throw an error
-    const findByIdStub = sinon.stub(Member, 'findById').throws(new Error('DB Error'));
+    // Stub Loan.findById to throw an error
+    const findByIdStub = sinon.stub(Loan, 'findById').throws(new Error('DB Error'));
 
     // Mock request data
     const req = { params: { id: new mongoose.Types.ObjectId().toString() } };
@@ -287,7 +288,7 @@ describe('DeleteMember Function Test', () => {
     };
 
     // Call function
-    await deleteMember(req, res);
+    await deleteLoan(req, res);
 
     // Assertions
     expect(res.status.calledWith(500)).to.be.true;
